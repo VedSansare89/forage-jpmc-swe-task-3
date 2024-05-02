@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Table } from '@finos/perspective';
 import { ServerRespond } from './DataStreamer';
-import { DataManipulator } from './DataManipulator';
+import { DataManipulator } from './DataManipulator'; // Import DataManipulator for generating rows
 import './Graph.css';
 
 interface IProps {
@@ -11,21 +11,25 @@ interface IProps {
 interface PerspectiveViewerElement extends HTMLElement {
   load: (table: Table) => void,
 }
+
 class Graph extends Component<IProps, {}> {
   table: Table | undefined;
 
   render() {
-    return React.createElement('perspective-viewer');
+    return <perspective-viewer></perspective-viewer>; // Use JSX syntax
   }
 
   componentDidMount() {
     // Get element from the DOM.
-    const elem = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
+    const elem = document.getElementsByTagName('perspective-viewer')[0] as PerspectiveViewerElement;
 
     const schema = {
-      stock: 'string',
-      top_ask_price: 'float',
-      top_bid_price: 'float',
+      ratio: 'float', // Add ratio field
+      upper_bound: 'float', // Add upper_bound field
+      lower_bound: 'float', // Add lower_bound field
+      trigger_alert: 'boolean', // Add trigger_alert field
+      price_abc: 'float', // Add price_abc field
+      price_def: 'float', // Add price_def field
       timestamp: 'date',
     };
 
@@ -36,13 +40,16 @@ class Graph extends Component<IProps, {}> {
       // Load the `table` in the `<perspective-viewer>` DOM reference.
       elem.load(this.table);
       elem.setAttribute('view', 'y_line');
-      elem.setAttribute('column-pivots', '["stock"]');
+      // Remove 'column-pivots' attribute to track ratio between two stocks
       elem.setAttribute('row-pivots', '["timestamp"]');
-      elem.setAttribute('columns', '["top_ask_price"]');
+      // Change 'columns' attribute to include ratio, upper_bound, lower_bound, and trigger_alert
+      elem.setAttribute('columns', '["ratio", "upper_bound", "lower_bound", "trigger_alert"]');
+      // Update 'aggregates' attribute to handle duplicate data and include ratio, upper_bound, lower_bound, and trigger_alert
       elem.setAttribute('aggregates', JSON.stringify({
-        stock: 'distinctcount',
-        top_ask_price: 'avg',
-        top_bid_price: 'avg',
+        ratio: 'avg', // Use 'avg' to calculate average ratio
+        upper_bound: 'avg', // Use 'avg' to calculate average upper_bound
+        lower_bound: 'avg', // Use 'avg' to calculate average lower_bound
+        trigger_alert: 'any', // Use 'any' to check if any trigger_alert is true
         timestamp: 'distinct count',
       }));
     }
@@ -51,10 +58,11 @@ class Graph extends Component<IProps, {}> {
   componentDidUpdate() {
     if (this.table) {
       this.table.update(
-        DataManipulator.generateRow(this.props.data),
+        DataManipulator.generateRow(this.props.data), // Use DataManipulator to generate rows
       );
     }
   }
 }
 
 export default Graph;
+
